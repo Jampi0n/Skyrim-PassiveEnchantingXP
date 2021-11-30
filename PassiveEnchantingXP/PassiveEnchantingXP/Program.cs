@@ -10,6 +10,7 @@ using Mutagen.Bethesda.Plugins;
 
 namespace PassiveEnchantingXP {
     public class Program {
+        static readonly bool USE_MASTER = true;
         const string PREFIX = "JEX_";
         const float MAGNITUDE = 1000.0f;
         public static async Task<int> Main(string[] args) {
@@ -33,117 +34,123 @@ namespace PassiveEnchantingXP {
         }
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state) {
-            var totalEnchMag = state.PatchMod.Globals.AddNewFloat();
-            totalEnchMag.EditorID = PREFIX + "TotalEnchMag";
-            var updateEffect = state.PatchMod.MagicEffects.AddNew(PREFIX + "UpdateEffect");
-            updateEffect.Name = updateEffect.EditorID;
-            updateEffect.BaseCost = 0;
-            updateEffect.Flags =
-                MagicEffect.Flag.Recover |
-                MagicEffect.Flag.NoHitEvent |
-                MagicEffect.Flag.NoDuration |
-                MagicEffect.Flag.NoMagnitude |
-                MagicEffect.Flag.NoArea |
-                MagicEffect.Flag.HideInUI |
-                MagicEffect.Flag.NoHitEffect;
-            updateEffect.Archetype.ActorValue = ActorValue.None;
-            updateEffect.Archetype.Type = MagicEffectArchetype.TypeEnum.Script;
-            updateEffect.CastType = CastType.ConstantEffect;
-            updateEffect.TargetType = TargetType.Self;
+            IMagicEffectGetter? enchEffectGetter = null;
+            if(!USE_MASTER) {
+                var totalEnchMag = state.PatchMod.Globals.AddNewFloat();
+                totalEnchMag.EditorID = PREFIX + "TotalEnchMag";
+                var updateEffect = state.PatchMod.MagicEffects.AddNew(PREFIX + "UpdateEffect");
+                updateEffect.Name = updateEffect.EditorID;
+                updateEffect.BaseCost = 0;
+                updateEffect.Flags =
+                    MagicEffect.Flag.Recover |
+                    MagicEffect.Flag.NoHitEvent |
+                    MagicEffect.Flag.NoDuration |
+                    MagicEffect.Flag.NoMagnitude |
+                    MagicEffect.Flag.NoArea |
+                    MagicEffect.Flag.HideInUI |
+                    MagicEffect.Flag.NoHitEffect;
+                updateEffect.Archetype.ActorValue = ActorValue.None;
+                updateEffect.Archetype.Type = MagicEffectArchetype.TypeEnum.Script;
+                updateEffect.CastType = CastType.ConstantEffect;
+                updateEffect.TargetType = TargetType.Self;
 
-            updateEffect.Conditions.Add(new ConditionFloat {
-                CompareOperator = CompareOperator.EqualTo,
-                ComparisonValue = 1.0f,
-                Data = new FunctionConditionData {
-                    RunOnType = Condition.RunOnType.Subject,
-                    Function = Condition.Function.GetIsID,
-                    ParameterOneRecord = Skyrim.Npc.Player
-                }
-            })
-            ;
+                updateEffect.Conditions.Add(new ConditionFloat {
+                    CompareOperator = CompareOperator.EqualTo,
+                    ComparisonValue = 1.0f,
+                    Data = new FunctionConditionData {
+                        RunOnType = Condition.RunOnType.Subject,
+                        Function = Condition.Function.GetIsID,
+                        ParameterOneRecord = Skyrim.Npc.Player
+                    }
+                })
+                ;
 
-            updateEffect.VirtualMachineAdapter = new VirtualMachineAdapter();
-            var script = new ScriptEntry {
-                Name = PREFIX + "PassiveEnchantingXP",
-                Flags = ScriptEntry.Flag.Local,
-            };
-            script.Properties.Add(new ScriptObjectProperty {
-                Name = "TotalEnchMag",
-                Object = totalEnchMag.AsLink()
-            });
-            script.Properties.Add(new ScriptObjectProperty {
-                Name = "PlayerRef",
-                Object = Constants.Player.AsSetter()
-            });
-            script.Properties.Add(new ScriptFloatProperty {
-                Name = "UpdateRate",
-                Data = 10.0f
-            });
+                updateEffect.VirtualMachineAdapter = new VirtualMachineAdapter();
+                var script = new ScriptEntry {
+                    Name = PREFIX + "PassiveEnchantingXP",
+                    Flags = ScriptEntry.Flag.Local,
+                };
+                script.Properties.Add(new ScriptObjectProperty {
+                    Name = "TotalEnchMag",
+                    Object = totalEnchMag.AsLink()
+                });
+                script.Properties.Add(new ScriptObjectProperty {
+                    Name = "PlayerRef",
+                    Object = Constants.Player.AsSetter()
+                });
+                script.Properties.Add(new ScriptFloatProperty {
+                    Name = "UpdateRate",
+                    Data = 10.0f
+                });
 
-            updateEffect.VirtualMachineAdapter.Scripts.Add(script);
+                updateEffect.VirtualMachineAdapter.Scripts.Add(script);
 
 
-            var enchEffect = state.PatchMod.MagicEffects.AddNew(PREFIX + "EnchEffect");
-            enchEffect.Name = enchEffect.EditorID;
-            enchEffect.BaseCost = 0;
-            enchEffect.Flags =
-                MagicEffect.Flag.Recover |
-                MagicEffect.Flag.NoHitEvent |
-                MagicEffect.Flag.NoDuration |
-                MagicEffect.Flag.NoArea |
-                MagicEffect.Flag.HideInUI |
-                MagicEffect.Flag.NoHitEffect |
-                MagicEffect.Flag.PowerAffectsMagnitude;
-            enchEffect.Archetype.ActorValue = ActorValue.None;
-            enchEffect.Archetype.Type = MagicEffectArchetype.TypeEnum.Script;
-            enchEffect.CastType = CastType.ConstantEffect;
-            enchEffect.TargetType = TargetType.Self;
+                var enchEffect = state.PatchMod.MagicEffects.AddNew(PREFIX + "EnchEffect");
+                enchEffectGetter = enchEffect;
+                enchEffect.Name = enchEffect.EditorID;
+                enchEffect.BaseCost = 0;
+                enchEffect.Flags =
+                    MagicEffect.Flag.Recover |
+                    MagicEffect.Flag.NoHitEvent |
+                    MagicEffect.Flag.NoDuration |
+                    MagicEffect.Flag.NoArea |
+                    MagicEffect.Flag.HideInUI |
+                    MagicEffect.Flag.NoHitEffect |
+                    MagicEffect.Flag.PowerAffectsMagnitude;
+                enchEffect.Archetype.ActorValue = ActorValue.None;
+                enchEffect.Archetype.Type = MagicEffectArchetype.TypeEnum.Script;
+                enchEffect.CastType = CastType.ConstantEffect;
+                enchEffect.TargetType = TargetType.Self;
 
-            enchEffect.Conditions.Add(new ConditionFloat {
-                CompareOperator = CompareOperator.EqualTo,
-                ComparisonValue = 1.0f,
-                Data = new FunctionConditionData {
-                    RunOnType = Condition.RunOnType.Subject,
-                    Function = Condition.Function.GetIsID,
-                    ParameterOneRecord = Skyrim.Npc.Player
-                },
-            });
+                enchEffect.Conditions.Add(new ConditionFloat {
+                    CompareOperator = CompareOperator.EqualTo,
+                    ComparisonValue = 1.0f,
+                    Data = new FunctionConditionData {
+                        RunOnType = Condition.RunOnType.Subject,
+                        Function = Condition.Function.GetIsID,
+                        ParameterOneRecord = Skyrim.Npc.Player
+                    },
+                });
 
-            enchEffect.VirtualMachineAdapter = new VirtualMachineAdapter();
-            script = new ScriptEntry {
-                Name = PREFIX + "ModGlobal",
-                Flags = ScriptEntry.Flag.Local,
-            };
-            script.Properties.Add(new ScriptObjectProperty {
-                Name = "GlobalToMod",
-                Object = totalEnchMag.AsLink()
-            });
-            enchEffect.VirtualMachineAdapter.Scripts.Add(script);
+                enchEffect.VirtualMachineAdapter = new VirtualMachineAdapter();
+                script = new ScriptEntry {
+                    Name = PREFIX + "ModGlobal",
+                    Flags = ScriptEntry.Flag.Local,
+                };
+                script.Properties.Add(new ScriptObjectProperty {
+                    Name = "GlobalToMod",
+                    Object = totalEnchMag.AsLink()
+                });
+                enchEffect.VirtualMachineAdapter.Scripts.Add(script);
 
-            var passiveUpdateAbility = state.PatchMod.Spells.AddNew(PREFIX + "UpdateAbility");
-            passiveUpdateAbility.Name = passiveUpdateAbility.EditorID;
-            passiveUpdateAbility.Flags = SpellDataFlag.IgnoreResistance | SpellDataFlag.ManualCostCalc | SpellDataFlag.NoAbsorbOrReflect;
-            passiveUpdateAbility.Type = SpellType.Ability;
-            passiveUpdateAbility.CastType = CastType.ConstantEffect;
-            passiveUpdateAbility.TargetType = TargetType.Self;
-            passiveUpdateAbility.EquipmentType = Skyrim.EquipType.EitherHand.AsNullable();
-            passiveUpdateAbility.MenuDisplayObject.SetTo(FormLink<IStaticGetter>.Null);
-            var effect = new Effect();
-            effect.BaseEffect.SetTo(updateEffect);
+                var passiveUpdateAbility = state.PatchMod.Spells.AddNew(PREFIX + "UpdateAbility");
+                passiveUpdateAbility.Name = passiveUpdateAbility.EditorID;
+                passiveUpdateAbility.Flags = SpellDataFlag.IgnoreResistance | SpellDataFlag.ManualCostCalc | SpellDataFlag.NoAbsorbOrReflect;
+                passiveUpdateAbility.Type = SpellType.Ability;
+                passiveUpdateAbility.CastType = CastType.ConstantEffect;
+                passiveUpdateAbility.TargetType = TargetType.Self;
+                passiveUpdateAbility.EquipmentType = Skyrim.EquipType.EitherHand.AsNullable();
+                passiveUpdateAbility.MenuDisplayObject.SetTo(FormLink<IStaticGetter>.Null);
+                var effect = new Effect();
+                effect.BaseEffect.SetTo(updateEffect);
 
-            effect.Conditions.Add(new ConditionFloat {
-                CompareOperator = CompareOperator.EqualTo,
-                ComparisonValue = 1.0f,
-                Data = new FunctionConditionData {
-                    RunOnType = Condition.RunOnType.Subject,
-                    Function = Condition.Function.IsInCombat
-                }
-            });
-            passiveUpdateAbility.Effects.Add(effect);
+                effect.Conditions.Add(new ConditionFloat {
+                    CompareOperator = CompareOperator.EqualTo,
+                    ComparisonValue = 1.0f,
+                    Data = new FunctionConditionData {
+                        RunOnType = Condition.RunOnType.Subject,
+                        Function = Condition.Function.IsInCombat
+                    }
+                });
+                passiveUpdateAbility.Effects.Add(effect);
 
-            var playerAliasQuest = createPlayerAlias(state.PatchMod, PREFIX + "Quest");
-            playerAliasQuest.Aliases.First().Spells.Add(passiveUpdateAbility);
-            playerAliasQuest.Flags = Quest.Flag.RunOnce | Quest.Flag.StartGameEnabled;
+                var playerAliasQuest = createPlayerAlias(state.PatchMod, PREFIX + "Quest");
+                playerAliasQuest.Aliases.First().Spells.Add(passiveUpdateAbility);
+                playerAliasQuest.Flags = Quest.Flag.RunOnce | Quest.Flag.StartGameEnabled;
+            } else {
+                enchEffectGetter = state.LinkCache.Resolve<IMagicEffectGetter>(FormKey.Factory("000802:PassiveEnchantingXP.esp"));
+            }
 
             var baseEnchantments = new HashSet<IObjectEffectGetter>();
             foreach(var armorGetter in state.LoadOrder.PriorityOrder.Armor().WinningOverrides()) {
@@ -166,15 +173,24 @@ namespace PassiveEnchantingXP {
             }
             foreach(var baseEnchGetter in baseEnchantments) {
                 var baseEnch = state.PatchMod.ObjectEffects.GetOrAddAsOverride(baseEnchGetter);
-                effect = new Effect {
-                    Data = new EffectData {
-                        Magnitude = MAGNITUDE,
-                        Duration = 0,
-                        Area = 0
+                var alreadyHasEffect = false;
+                foreach(var e in baseEnch.Effects) {
+                    if(e.BaseEffect.FormKey == enchEffectGetter.FormKey) {
+                        alreadyHasEffect = true;
+                        break;
                     }
-                };
-                effect.BaseEffect.SetTo(enchEffect);
-                baseEnch.Effects.Add(effect);
+                }
+                if(!alreadyHasEffect) {
+                    var effect = new Effect {
+                        Data = new EffectData {
+                            Magnitude = MAGNITUDE,
+                            Duration = 0,
+                            Area = 0
+                        }
+                    };
+                    effect.BaseEffect.SetTo(enchEffectGetter);
+                    baseEnch.Effects.Add(effect);
+                }
             }
         }
     }

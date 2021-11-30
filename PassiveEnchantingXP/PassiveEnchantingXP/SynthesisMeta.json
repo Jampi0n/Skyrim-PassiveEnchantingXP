@@ -4,5 +4,7 @@
   "OneLineDescription": "Patcher for Passive Enchanting XP.",
   "LongDescription": " Script files are required for the mod to function. Original .esp may be replaced by the Synthesis patch.",
   "PreferredAutoVersioning": "Default",
-  "RequiredMods": []
+  "RequiredMods": [
+    "PassiveEnchantingXP.esp"
+  ]
 }
