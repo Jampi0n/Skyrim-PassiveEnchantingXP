@@ -3,11 +3,11 @@ Scriptname JEX_PassiveEnchantingXP extends activemagiceffect
 Actor Property PlayerRef Auto
 GlobalVariable Property TotalEnchMag Auto
 GlobalVariable Property XPFactor Auto
-Float Property UpdateRate Auto
+GlobalVariable Property JEX_MaxXpPerMinute Auto
+GlobalVariable Property JEX_UpdateTimer Auto
+GlobalVariable Property JEX_MaxPerBattle Auto
 String skillAV = "Enchanting"
-Int maxPerBattle = 6
 Int currentPerBattle = 0
-String fileName = "../../../PassiveEnchantingXP.json"
 
 Float Function AVtoXP(Float av)
 	; xp should always be similar regardless of level, so xp gain is similar to xp gain from enchanting
@@ -23,25 +23,22 @@ Float Function AVtoXP(Float av)
 	elseif ratio > 1
 		ratio = 1
 	endif
-	float rate = JsonUtil.GetFloatValue(fileName, "max_xp_per_minute", 0.2)
-	if !rate || rate <= 0.0 ; fallback
-		rate = 0.2
-	endif
-	return rate * ratio / 6
+	float rate = JEX_MaxXpPerMinute.GetValue()
+	return rate * ratio * 60.0 / JEX_UpdateTimer.GetValue()
 EndFunction
 
 Event OnEffectStart(Actor akTarget, Actor akCaster)
 	currentPerBattle = 0
-	RegisterForSingleUpdate(UpdateRate)
+	RegisterForSingleUpdate(JEX_UpdateTimer.GetValue())
 EndEvent
 
 Event OnUpdate()
-	If currentPerBattle <= maxPerBattle
+	If currentPerBattle <= JEX_MaxPerBattle.GetValueInt()
 		currentPerBattle += 1
 		float xp = AVtoXP(TotalEnchMag.GetValue()) * 5
 		if xp > 0
 			Game.AdvanceSkill(skillAV, xp)
 		endif
-		RegisterForSingleUpdate(UpdateRate)
+		RegisterForSingleUpdate(JEX_UpdateTimer.GetValue())
 	EndIf
 EndEvent
