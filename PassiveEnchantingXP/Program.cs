@@ -18,7 +18,7 @@ namespace PassiveEnchantingXP {
         [SynthesisTooltip("How frequently xp is awarded. A smaller update time detects the time spent in combat more accurately, but also requires more script executions.")]
         public float updateTimer = 10.0f;
         [SynthesisTooltip("If a single battle exceeds this duration, no further experience will be awarded until the player exits and re-enters combat.")]
-        public int maxBattleDuration = 60;
+        public float maxBattleDuration = 60.0f;
     }
     public class Program {
         const float MAGNITUDE = 1000.0f;
